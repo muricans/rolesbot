@@ -10,7 +10,7 @@ module.exports = {
             ids: [],
         }), err => {
             if (err) return console.log(err);
-            rolebot.refreshActiveMessages().then(() => {
+            rolebot.refreshActiveMessagesFor(message.guild.id).then(() => {
                 message.channel.send(`${message.author} All reaction messages have been purged.`);
             }).catch(err => {
                 message.channel.send(`${message.author} Error: ${err.name}`);

@@ -1,3 +1,4 @@
+//TODO: Guild support
 module.exports = {
     parseChannel(channel) {
         if (!channel) return undefined;
@@ -13,7 +14,42 @@ module.exports = {
         if (channel.startsWith('<#') && channel.endsWith('>')) return true;
         return false;
     },
-    refreshActiveMessages() {
+    refreshActiveMessagesFor(guildId) {
+        return new Promise((resolve, reject) => {
+            fs.readFile("./messages.json", "utf-8", async (err, data) => {
+                if (err) reject(err);
+                const messages = JSON.parse(data);
+                if (messages.ids.length > 0) {
+                    for (const m of messages.ids) {
+                        if (m.guldId !== guildId) continue;
+                        const guild = await client.guilds.fetch(guildId);
+                        const channel = guild.channels.cache.find(v => v.id === m.channelId);
+                        if (!(channel instanceof Discord.TextChannel)) continue;
+                        channel.messages.fetch(m.messageId).then(async message => {
+                            const role = await guild.roles.fetch(m.roleId);
+                            if (!(registermessage.collections.get(`${message.id}:${channel.id}:${guildId}`)))
+                                registermessage.collectReactions(message, role, client, m.emojiAddId, m.emojiRemoveId);
+                        }).catch(() => {
+                            unregistermessage.deleteReactionMessage(m.messageId, channel.id, guildId, () => {
+                                const regId = `${m.messageId}:${channel.id}:${guildId}`;
+                                if (registermessage.collections.get(regId)) {
+                                    registermessage.collections.get(regId).stop();
+                                    registermessage.collections.delete(regId);
+                                }
+                            });
+                        });
+                    }
+                } else if (registermessage.collections.size > 0) {
+                    registermessage.collections.forEach((collection, key) => {
+                        collection.stop();
+                        registermessage.collections.delete(key);
+                    });
+                }
+                resolve();
+            });
+        });
+    },
+    refreshAllActiveMessages() {
         return new Promise((resolve, reject) => {
             fs.readFile("./messages.json", "utf-8", async (err, data) => {
                 if (err) return reject(err);
@@ -26,20 +62,22 @@ module.exports = {
                         if (!(channel instanceof Discord.TextChannel)) continue;
                         channel.messages.fetch(m.messageId).then(async message => {
                             const role = await guild.roles.fetch(m.roleId);
-                            if (!(registermessage.collections.get(`${message.id}:${channel.id}`))) {
+                            if (!(registermessage.collections.get(`${message.id}:${channel.id}:${message.guild.id}`)))
                                 registermessage.collectReactions(message, role, client, m.emojiAddId, m.emojiRemoveId);
-                            }
                         }).catch(() => {
-                            unregistermessage.deleteReactionMessage(m.messageId, channel.id);
+                            unregistermessage.deleteReactionMessage(m.messageId, channel.id, () => {
+                                const regId = `${m.messageId}:${channel.id}:${m.guildId}`;
+                                if (registermessage.collections.get(regId)) {
+                                    registermessage.collections.get(regId).stop();
+                                    registermessage.collections.delete(regId);
+                                }
+                            });
                         });
                     }
                 } else if (registermessage.collections.size > 0) {
-                    registermessage.collections.forEach((val, key) => {
-                        const ids = key.split(':');
-                        if (!(messages.ids.find(v => v.messageId === ids[0] && v.channelId === ids[1]))) {
-                            registermessage.collections.get(key).stop();
-                            registermessage.collections.delete(key);
-                        }
+                    registermessage.collections.forEach((collection, key) => {
+                        collection.stop();
+                        registermessage.collections.delete(key);
                     });
                 }
                 resolve();
@@ -86,7 +124,7 @@ function main() {
 
     // everytime bot is ready, reload all the react messages.
     client.on('ready', async () => {
-        await module.exports.refreshActiveMessages();
+        await module.exports.refreshAllActiveMessages();
     });
 
     client.login(settings.token);

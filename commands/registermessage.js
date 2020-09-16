@@ -9,12 +9,6 @@ module.exports = {
     args: true,
     minArgs: 2,
     permissions: ['MANAGE_GUILD'],
-    /**
-     * 
-     * @param {*} message 
-     * @param {*} args 
-     * @param {Discord.Client} client 
-     */
     async execute(message, args, client) {
         const messageId = args[0];
         const messages = JSON.parse(fs.readFileSync("./messages.json", 'utf8'));
@@ -82,5 +76,5 @@ function collectReactions(message, role, client, emojiAdd, emojiRemove) {
             guildMember.roles.remove(role);
         }
     });
-    module.exports.collections.set(`${message.id}:${message.channel.id}`, collection);
+    module.exports.collections.set(`${message.id}:${message.channel.id}:${message.guild.id}`, collection);
 }
