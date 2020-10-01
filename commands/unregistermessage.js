@@ -1,5 +1,4 @@
 const fs = require('fs');
-const registermessages = require('./registermessage');
 const rolebot = require('../rolebot');
 
 module.exports = {
@@ -14,8 +13,6 @@ module.exports = {
         const channel = rolebot.parseChannel(args[1]) || message.channel;
         deleteReactionMessage(messageId, channel.id, message.guild.id, (err) => {
             if (err) return message.channel.send(`${message.author} Error: ${err}`);
-            registermessages.collections.get(`${messageId}:${channel.id}:${message.guild.id}`).stop();
-            registermessages.collections.delete(`${messageId}:${channel.id}:${message.guild.id}`);
             message.channel.send(`Successfully deleted role react on message with id of ${messageId}`);
         });
     },

@@ -1,5 +1,4 @@
 const fs = require('fs');
-const rolebot = require('../rolebot');
 
 module.exports = {
     name: 'purge',
@@ -10,11 +9,7 @@ module.exports = {
             ids: [],
         }), err => {
             if (err) return console.log(err);
-            rolebot.refreshActiveMessagesFor(message.guild.id).then(() => {
-                message.channel.send(`${message.author} All reaction messages have been purged.`);
-            }).catch(err => {
-                message.channel.send(`${message.author} Error: ${err.name}`);
-            });
+            message.channel.send(`${message.author} All reaction messages have been purged.`);
         });
     },
 };

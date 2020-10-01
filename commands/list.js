@@ -1,4 +1,3 @@
-const rolebot = require('../rolebot');
 const fs = require('fs');
 const {
     EmbedBuilder,
@@ -9,7 +8,6 @@ module.exports = {
     description: 'Refreshes and lists all currently active role react messages.',
     permissions: ['MANAGE_GUILD'],
     async execute(message) {
-        rolebot.refreshActiveMessagesFor(message.guild.id);
         const messages = JSON.parse(fs.readFileSync('./messages.json', 'utf-8'));
         const list = messages.ids.filter(v => v.guildId === message.guild.id);
         if (list.length > 0) {

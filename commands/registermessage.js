@@ -1,5 +1,4 @@
 const fs = require('fs');
-const Discord = require('discord.js');
 const rolebot = require('../rolebot');
 
 module.exports = {
@@ -53,28 +52,8 @@ module.exports = {
 
             fs.writeFile('./messages.json', JSON.stringify(messages), (err) => {
                 if (err) console.log(err);
-                collectReactions(m, role, client, emojiAdd, emojiRemove);
                 message.channel.send(`${message.author} Successfully added role reaction to message with id of '${messageId}' in channel '${channel.name}'`);
             });
         }).catch(() => message.channel.send(`${message.author} I could not find a message with an id of '${messageId}' on the channel '${channel.name}'!`));
     },
-    collectReactions: collectReactions,
-    collections: new Discord.Collection(),
 };
-
-function collectReactions(message, role, client, emojiAdd, emojiRemove) {
-    const collection = message.createReactionCollector((reaction, user) => reaction.emoji.name === emojiAdd || reaction.emoji.name === emojiRemove && user.id !== client.user.id);
-    collection.on('collect', (reaction, user) => {
-        reaction.users.remove(user);
-        if (user.bot) return;
-        const guildMember = message.guild.member(user);
-        if (reaction.emoji.name === emojiAdd) {
-            if (guildMember.roles.cache.array().find(r => r.id === role.id)) return;
-            guildMember.roles.add(role);
-        } else {
-            if (!(guildMember.roles.cache.array().find(r => r.id === role.id))) return;
-            guildMember.roles.remove(role);
-        }
-    });
-    module.exports.collections.set(`${message.id}:${message.channel.id}:${message.guild.id}`, collection);
-}
