@@ -24,9 +24,18 @@ function deleteReactionMessage(messageId, channelId, guildId, callback) {
         if (err) return console.log(err);
         const messages = JSON.parse(data);
         let index = messages.ids.find(v => v.messageId === messageId && v.channelId === channelId && v.guildId === guildId);
+        const multi = messages.multi.find(v => v.id === messageId && v.channel === channelId && v.guild === guildId);
         if (index) {
             index = messages.ids.indexOf(index);
             messages.ids.splice(index, 1);
+            fs.writeFile('./messages.json', JSON.stringify(messages), err => {
+                if (err) return console.log(err);
+                if (callback)
+                    callback();
+            });
+        } else if (multi) {
+            index = messages.multi.indexOf(multi);
+            messages.multi.splice(index, 1);
             fs.writeFile('./messages.json', JSON.stringify(messages), err => {
                 if (err) return console.log(err);
                 if (callback)

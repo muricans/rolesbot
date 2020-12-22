@@ -57,6 +57,11 @@ client.on('ready', () => {
             if (channel instanceof Discord.TextChannel)
                 channel.messages.fetch(m.messageId, true);
         });
+        messages.multi.map(m => {
+            const channel = client.channels.cache.get(m.channel);
+            if (channel instanceof Discord.TextChannel)
+                channel.messages.fetch(m.id, true);
+        });
     });
 });
 
@@ -75,15 +80,18 @@ client.on('messageDelete', message => {
 });
 
 client.on('messageReactionAdd', (reaction, user) => {
+    //console.log(reaction.emoji, reaction.emoji.name, reaction.emoji.id);
     if (user.bot) return;
     fs.readFile('./messages.json', 'utf-8', async (err, data) => {
         if (err) return console.log(err);
         const messages = JSON.parse(data);
         const reactionMessage = messages.ids.find(m => m.messageId === reaction.message.id && m.channelId === reaction.message.channel.id &&
             m.guildId === reaction.message.guild.id);
+        const multiMessage = messages.multi.find(m => m.id === reaction.message.id && m.guild === reaction.message.guild.id && m.channel === reaction.message.channel.id);
         if (reactionMessage) {
             await reaction.users.remove(user);
-            const guildMember = reaction.message.guild.member(user);
+            let guildMember = reaction.message.guild.member(user);
+            if (!guildMember) guildMember = await reaction.message.guild.members.fetch(user);
             const role = await reaction.message.guild.roles.fetch(reactionMessage.roleId);
             if (reaction.emoji.name === reactionMessage.emojiAddId) {
                 if (guildMember.roles.cache.array().find(r => r.id === role.id)) return;
@@ -92,6 +100,21 @@ client.on('messageReactionAdd', (reaction, user) => {
                 if (!(guildMember.roles.cache.array().find(r => r.id === role.id))) return;
                 guildMember.roles.remove(role);
             }
+        } else if (multiMessage) {
+            await reaction.users.remove(user);
+            let guildMember = reaction.message.guild.member(user);
+            if (!guildMember) guildMember = await reaction.message.guild.members.fetch(user);
+            let roleSelected;
+            for (const [key, value] of Object.entries(multiMessage.roles)) {
+                if (key === reaction.emoji.name || key === reaction.emoji.id) {
+                    roleSelected = value;
+                    break;
+                }
+            }
+            if (!roleSelected) return console.log("Could not find role selected!");
+            const role = await reaction.message.guild.roles.fetch(roleSelected);
+            if (guildMember.roles.cache.array().find(r => r.id === role.id)) await guildMember.roles.remove(role);
+            else await guildMember.roles.add(role);
         }
     });
 });
